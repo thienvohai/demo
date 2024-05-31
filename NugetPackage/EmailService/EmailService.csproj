@@ -1,0 +1,30 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AssemblyName>EmailService</AssemblyName>
+    <RootNamespace>EmailService</RootNamespace>
+    <PackageId>EmailValidator</PackageId>
+    <Version>1.0.0</Version>
+    <Authors>ThienVo</Authors>
+    <Owners>ThienVo</Owners>
+    <Title>EmailValidator</Title>
+    <Description>EmailService</Description>
+    <PackageProjectUrl>https://github.com/thienvohai/email-management-service</PackageProjectUrl>
+    <PackageReleaseNotes># 1.0.0</PackageReleaseNotes>
+    <PackageTags>Email Service</PackageTags>
+    <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+    <NeutralLanguage>en-US</NeutralLanguage>
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Dapper" Version="2.1.28" />
+    <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="8.0.0" />
+    <PackageReference Include="Npgsql" Version="6.0.10" />
+    <PackageReference Include="System.Data.SqlClient" Version="4.8.6" />
+  </ItemGroup>
+
+</Project>

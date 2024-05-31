@@ -1,0 +1,38 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <LangVersion>latest</LangVersion>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AssemblyName>EmailService.SDK</AssemblyName>
+    <RootNamespace>EmailService.SDK</RootNamespace>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <PackageId>EmailService.SDK</PackageId>
+    <Version>1.0.0</Version>
+    <Authors>ThienVo</Authors>
+    <Owners>ThienVo</Owners>
+    <Title>EmailService.SDK</Title>
+    <Description>EmailService.SDK</Description>
+    <PackageProjectUrl>https://github.com/thienvohai/email-management-service</PackageProjectUrl>
+    <PackageReleaseNotes># 1.0.0</PackageReleaseNotes>
+    <PackageTags>Email Service SDK</PackageTags>
+    <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+    <NeutralLanguage>en-US</NeutralLanguage>
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="..\..\src\EmailService.Domain\CommonModel\BaseResponse.cs" Link="DataContract\BaseResponse.cs" />
+    <Compile Include="..\..\src\EmailService.Domain\CommonModel\CommonEnum.cs" Link="DataContract\CommonEnum.cs" />
+    <Compile Include="..\..\src\EmailService.Domain\CommonModel\EmailMessage.cs" Link="DataContract\EmailMessage.cs" />
+    <Compile Include="..\..\src\EmailService.Domain\CommonModel\SaveEmailResponse.cs" Link="DataContract\SaveEmailResponse.cs" />
+    <Compile Include="..\..\src\EmailService.Domain\CommonModel\EmailDetailResponse.cs" Link="DataContract\EmailDetailResponse.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="IdentityModel" Version="6.2.0" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Options" Version="8.0.0" />
+    <PackageReference Include="System.Text.Json" Version="8.0.2" />
+  </ItemGroup>
+
+</Project>

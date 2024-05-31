@@ -1,0 +1,160 @@
+stages:
+  - pre-build
+  - build-deploy
+  - deliver
+  - publish-nuget
+
+variables:
+  LOC_REGISTRY: xxxxxxxxx
+  CICD_REGISTRY: ${LOC_REGISTRY}/cicd
+  # LOC_REGISTRY: clouddevops.azurecr.io/notification
+  DEV_REGISTRY: devedurepo.azurecr.io
+  PRODUCT_VERSION: email2023
+  PRODUCT_NAME: "emailservice"
+  BUILD_IMAGE_TAG: "$PRODUCT_VERSION.$CI_PIPELINE_ID"
+  RuntimeVersion: 8.0.2-alpine3.19-amd64
+  #variable for SDK
+  CODE_URL: xxxxxxxxxxx
+  TOOL_URL: 'git@$CI_SERVER_HOST:cloud/devops/scripts.git'
+  componentNuget: xxxxxxxxxxxxxxxxxxx
+  nugetSource: xxxxxxxxxxxxxxxxxx
+  buildsdk: ${CICD_REGISTRY}/sdk:8.0  
+
+emailservice-api:
+  stage: pre-build
+  image: ${CICD_REGISTRY}/sdk:8.0
+  tags:
+    - linux-docker-build
+  rules:
+    - changes:
+      - "src/**/*"
+      when: always
+  script:
+    - cd ./src
+    - dotnet restore emailservice.sln --source $nugetSource --source $componentNuget --no-cache
+    - dotnet build emailservice.sln --no-restore /t:Rebuild /p:Configuration=Release,PlatformTarget=AnyCPU
+  after_script:
+    - rm -rf $CI_PROJECT_DIR/*
+
+emailservice-sdk:
+  stage: pre-build
+  image: ${CICD_REGISTRY}/sdk:8.0
+  tags:
+    - linux-docker-build
+  rules:
+    - changes:
+      - "NugetPackage/EmailService.SDK/**/*"
+      when: always
+  script:
+    - dotnet build --no-cache ./NugetPackage/EmailService.SDK/EmailService.SDK.csproj -c Release --source $nugetSource --source $componentNuget
+  after_script:
+    - rm -rf $CI_PROJECT_DIR/*
+  allow_failure: true
+
+emailvalidator:
+  stage: pre-build
+  image: ${CICD_REGISTRY}/sdk:8.0
+  tags:
+    - linux-docker-build
+  rules:
+    - changes:
+      - "NugetPackage/EmailValidator/**/*"
+      when: always
+  script:
+    - dotnet build --no-cache ./NugetPackage/EmailValidator/EmailValidator.csproj -c Release --source $nugetSource --source $componentNuget
+  after_script:
+    - rm -rf $CI_PROJECT_DIR/*
+  allow_failure: true
+
+publish-emailservice-sdk:
+  stage: build-deploy
+  image: ${CICD_REGISTRY}/sdk:8.0
+  tags:
+    - linux-docker-build
+  when: manual
+  script:
+    - pwsh
+    #- if(!$version) {Write-ERROR "[ERROR] Cannot find variables:version."; Exit 1}
+    - echo $version
+    - dotnet pack ./NugetPackage/EmailService.SDK/EmailService.SDK.csproj -c Release -o ./package --include-symbols -p:Version=$version -v q --source $nugetSource --source $componentNuget
+    - ls ./package
+    - dotnet nuget push ./package/*.nupkg -s $componentNuget -k $DevOps_NuGet_API
+  after_script:
+    - rm -rf $CI_PROJECT_DIR/*
+
+publish-emailservice-nuget:
+  stage: build-deploy
+  image: ${CICD_REGISTRY}/sdk:8.0
+  tags:
+    - linux-docker-build
+  when: manual
+  script:
+    - pwsh
+    #- if(!$version) {Write-ERROR "[ERROR] Cannot find variables:version."; Exit 1}
+    - echo $version
+    - dotnet pack ./NugetPackage/EmailService/EmailService.csproj -c Release -o ./package --include-symbols -p:Version=$version -v q --source $nugetSource --source $componentNuget
+    - ls ./package
+    - dotnet nuget push ./package/*.nupkg -s $componentNuget -k $DevOps_NuGet_API
+  after_script:
+    - rm -rf $CI_PROJECT_DIR/*
+
+.job_template: &build_image
+  stage: build-deploy
+  image: $CICD_REGISTRY/podman-runner:4.6.1
+  tags:
+    - linux-docker-build
+  # only:
+  #   refs:
+  #     - main
+  when: manual
+  script:
+    - |
+      image="${LOC_REGISTRY}/devops/${PRODUCT_NAME}/${role}:$BUILD_IMAGE_TAG"
+      echo $image
+      dockerfile="$CI_PROJECT_DIR/Deployment/Dockerfile/Dockerfile_emailservice_${role}"
+      echo ${dockerfile}
+      echo docker login -u ${HARBORPLUS_USER} -p ${HARBORPLUS_PASSWD} ${LOC_REGISTRY}
+      docker login -u ${HARBORPLUS_USER} -p ${HARBORPLUS_PASSWD} ${LOC_REGISTRY}
+      echo docker build --no-cache -t $image -f ${dockerfile} $CI_PROJECT_DIR --build-arg RUNTIME_VERSION=$RuntimeVersion --build-arg NUGET_SOURCE=${nugetSource} --build-arg NUGET_SOURCE2=${componentNuget} 
+      docker build --no-cache -t $image -f ${dockerfile} $CI_PROJECT_DIR --build-arg RUNTIME_VERSION=$RuntimeVersion --build-arg NUGET_SOURCE=${nugetSource} --build-arg NUGET_SOURCE2=${componentNuget} 
+      docker push $image
+      deployment="notification-${role}"
+      setCommand="${role}=$image"
+      # kubectl set image -n foundation-system deployment $deployment $setCommand --context devops-aks-apps-admin
+      echo -ForegroundColor Green "image=$image"
+  after_script:
+    - rm -rf $CI_PROJECT_DIR/*
+
+.job_template: &deliver
+  stage: deliver
+  script:
+    - |
+      image="${LOC_REGISTRY}/devops/${PRODUCT_NAME}/${role}:$BUILD_IMAGE_TAG"
+      echo "delivering image:$image to ${DEV_REGISTRY} for ${PRODUCT_NAME}"
+      docker login -u ${HARBORPLUS_USER} -p ${HARBORPLUS_PASSWD} ${LOC_REGISTRY}
+      docker pull $image
+      docker login -u ${DEV_REGISTRY_USER} -p ${DEV_REGISTRY_PASSWD} ${DEV_REGISTRY}
+      devimage="${DEV_REGISTRY}/${PRODUCT_NAME}/${role}:$BUILD_IMAGE_TAG"
+      docker tag $image $devimage
+      docker push $devimage
+      docker rmi $devimage
+      docker rmi $image
+      # if(!$?){ docker rmi $devimage;docker rmi $image;exit 1; }
+      # else{ docker rmi $devimage;docker rmi $image; }
+  rules:
+    #- if: '$CI_PIPELINE_SOURCE == "web" || ($CI_AUTO != "true" && $CI_COMMIT_REF_PROTECTED == "false")'
+    - if: '$CI_AUTO == "true"'
+      when: on_success
+    - when: manual
+  tags:
+    - 431-linux-bash-delivery
+
+build-deploy-emailservice-api:
+  <<: *build_image
+  variables:
+    role: api
+
+deliever-emailservice-api:
+  <<: *deliver
+  variables:
+    role: api

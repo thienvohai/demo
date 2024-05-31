@@ -1,0 +1,16 @@
+FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+ARG NUGET_SOURCE
+ARG NUGET_SOURCE2
+WORKDIR /src
+COPY src .
+COPY NuGet.Config /src/EmailService.API
+WORKDIR /src/EmailService.API
+# RUN dotnet restore --configfile ./NuGet.Config
+RUN dotnet publish -c Release -o /publish --source $NUGET_SOURCE --source $NUGET_SOURCE2
+
+FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
+ENV ASPNETCORE_URLS=https://+:8443
+EXPOSE 8443
+WORKDIR /app
+COPY --from=build /publish /app
+ENTRYPOINT ["dotnet", "EmailService.API.dll"]

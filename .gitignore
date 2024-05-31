@@ -1,0 +1,17 @@
+*.csproj.user
+**/bin
+**/obj
+**/debug
+**/node_modules.cache
+**/release
+**.vs
+packages
+.idea/
+.cache/
+.vscode
+**/node_modules
+dbp/BatchJob.JobExe/appsettings.Development.json
+**/FakesAssemblies
+**/dbp/TestResults
+**/logs
+**/BatchJob.Web/wwwroot/*
