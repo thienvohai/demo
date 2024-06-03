@@ -2,7 +2,7 @@
 This is repository for a Email Management System. Please check the Document for more infomation
 
 ## Requirement Document
-[a relative link](./Document/RequirementDocument.md)
+[RequirementDocument.md](./Document/RequirementDocument.md)
 
 ## Design Document
-[a relative link](./Document/DesignDocument.md)
+[DesignDocument.md](./Document/DesignDocument.md)
